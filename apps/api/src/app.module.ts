@@ -7,6 +7,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { EventsModule } from './events/events.module';
 import { HealthController } from './health/health.controller';
 import { PrismaModule } from './prisma/prisma.module';
+import { TasksModule } from './tasks/tasks.module';
 
 /**
  * Root module. HTTP (main.ts), the MCP server (mcp.ts) and the smoke script all boot this same
@@ -21,6 +22,7 @@ import { PrismaModule } from './prisma/prisma.module';
     ApplicationsModule,
     DashboardModule,
     AssistantModule,
+    TasksModule,
   ],
   controllers: [HealthController],
 })
