@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "lifeos": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["apps/api/dist/mcp.js"],
+      "env": {}
+    }
+  }
+}
