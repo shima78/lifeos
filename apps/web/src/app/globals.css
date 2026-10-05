@@ -1,0 +1,184 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * LifeOS design tokens. Neutral chrome with one blue accent; data colors are the validated
+ * categorical slots (see docs/decisions.md → UI). Dark values are selected steps, not a flip.
+ */
+:root {
+  --radius: 0.625rem;
+
+  --background: #f6f6f4; /* page plane */
+  --foreground: #0b0b0b;
+  --card: #fcfcfb; /* surfaces */
+  --card-foreground: #0b0b0b;
+  --popover: #ffffff;
+  --popover-foreground: #0b0b0b;
+  --primary: #2a78d6;
+  --primary-foreground: #ffffff;
+  --secondary: #efeeeb;
+  --secondary-foreground: #1d1d1b;
+  --muted: #f0efec;
+  --muted-foreground: #6b6a66;
+  --accent: #ecebe7;
+  --accent-foreground: #0b0b0b;
+  --destructive: #d03b3b;
+  --destructive-foreground: #ffffff;
+  --border: #e4e3dd;
+  --input: #d9d8d1;
+  --ring: #2a78d6;
+  --sidebar: #fbfbfa;
+
+  /* Chart chrome */
+  --chart-grid: #e1e0d9;
+  --chart-axis: #c3c2b7;
+  --chart-muted: #898781;
+  --chart-series: #2a78d6;
+
+  /* Application status (validated categorical order: saved → withdrawn) */
+  --status-saved: #eb6834;
+  --status-applied: #2a78d6;
+  --status-screening: #eda100;
+  --status-interview: #4a3aa7;
+  --status-offer: #008300;
+  --status-rejected: #e34948;
+  --status-withdrawn: #1baf7a;
+
+  /* Reserved status semantics (alerts), always paired with an icon + label */
+  --signal-good: #0ca30c;
+  --signal-warning: #fab219;
+  --signal-serious: #ec835a;
+  --signal-critical: #d03b3b;
+}
+
+.dark {
+  --background: #0d0d0d;
+  --foreground: #f5f5f3;
+  --card: #1a1a19;
+  --card-foreground: #f5f5f3;
+  --popover: #1f1f1e;
+  --popover-foreground: #f5f5f3;
+  --primary: #3987e5;
+  --primary-foreground: #ffffff;
+  --secondary: #262624;
+  --secondary-foreground: #f0f0ee;
+  --muted: #232321;
+  --muted-foreground: #a3a29a;
+  --accent: #2a2a28;
+  --accent-foreground: #f5f5f3;
+  --destructive: #e66767;
+  --destructive-foreground: #ffffff;
+  --border: #2c2c2a;
+  --input: #383835;
+  --ring: #3987e5;
+  --sidebar: #131312;
+
+  --chart-grid: #2c2c2a;
+  --chart-axis: #383835;
+  --chart-muted: #898781;
+  --chart-series: #3987e5;
+
+  --status-saved: #d95926;
+  --status-applied: #3987e5;
+  --status-screening: #c98500;
+  --status-interview: #9085e9;
+  --status-offer: #008300;
+  --status-rejected: #e66767;
+  --status-withdrawn: #199e70;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-chart-grid: var(--chart-grid);
+  --color-chart-axis: var(--chart-axis);
+  --color-chart-muted: var(--chart-muted);
+  --color-chart-series: var(--chart-series);
+  --color-signal-good: var(--signal-good);
+  --color-signal-warning: var(--signal-warning);
+  --color-signal-serious: var(--signal-serious);
+  --color-signal-critical: var(--signal-critical);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+}
+
+/* Markdown inside assistant replies. */
+.chat-md {
+  @apply text-sm leading-relaxed;
+}
+.chat-md > * + * {
+  @apply mt-2;
+}
+.chat-md ul {
+  @apply list-disc pl-5;
+}
+.chat-md ol {
+  @apply list-decimal pl-5;
+}
+.chat-md li + li {
+  @apply mt-0.5;
+}
+.chat-md strong {
+  @apply font-semibold;
+}
+.chat-md a {
+  @apply text-primary underline underline-offset-2;
+}
+.chat-md code {
+  @apply rounded bg-muted px-1 py-0.5 text-[0.85em];
+}
+.chat-md pre {
+  @apply overflow-x-auto rounded-md bg-muted p-2;
+}
+.chat-md table {
+  @apply w-full border-collapse text-xs;
+}
+.chat-md th,
+.chat-md td {
+  @apply border-b px-2 py-1 text-left;
+}
+.chat-md th {
+  @apply font-medium text-muted-foreground;
+}
+.chat-md h1,
+.chat-md h2,
+.chat-md h3 {
+  @apply text-sm font-semibold;
+}
