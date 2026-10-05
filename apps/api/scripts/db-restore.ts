@@ -13,6 +13,8 @@ interface Backup {
   companies: Prisma.CompanyCreateManyInput[];
   applications: Prisma.ApplicationCreateManyInput[];
   events: Prisma.ApplicationEventCreateManyInput[];
+  /** Present from format v2. */
+  tasks?: Prisma.TaskCreateManyInput[];
 }
 
 async function main(): Promise<void> {
@@ -22,14 +24,16 @@ async function main(): Promise<void> {
     throw new Error('Usage: pnpm db:restore <backup-file>  (file not found)');
   }
   const backup = JSON.parse(readFileSync(resolve(file), 'utf8')) as Backup;
-  if (backup.format !== 'lifeos-backup/1')
+  if (!['lifeos-backup/1', 'lifeos-backup/2'].includes(backup.format)) {
     throw new Error(`Unknown backup format: ${backup.format}`);
+  }
+  const tasks = backup.tasks ?? [];
 
   const prisma = new PrismaClient();
   try {
     await prisma.$transaction(async (tx) => {
       await tx.$executeRawUnsafe(
-        'TRUNCATE TABLE "ApplicationEvent", "Application", "Company" RESTART IDENTITY CASCADE',
+        'TRUNCATE TABLE "Task", "ApplicationEvent", "Application", "Company" RESTART IDENTITY CASCADE',
       );
       await tx.company.createMany({ data: backup.companies });
       await tx.application.createMany({ data: backup.applications });
@@ -38,13 +42,14 @@ async function main(): Promise<void> {
       await tx.applicationEvent.createMany({
         data: backup.events.map((e) => ({ ...e, metadata: e.metadata ?? undefined })),
       });
+      await tx.task.createMany({ data: tasks });
       // Continue the insertion-order counter after the restored events.
       await tx.$executeRawUnsafe(
         `SELECT setval(pg_get_serial_sequence('"ApplicationEvent"', 'sequence'), COALESCE((SELECT MAX("sequence") FROM "ApplicationEvent"), 0) + 1, false)`,
       );
     });
     console.log(
-      `Restored ${backup.companies.length} companies, ${backup.applications.length} applications and ${backup.events.length} events.`,
+      `Restored ${backup.companies.length} companies, ${backup.applications.length} applications, ${backup.events.length} events and ${tasks.length} tasks.`,
     );
   } finally {
     await prisma.$disconnect();

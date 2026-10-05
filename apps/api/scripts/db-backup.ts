@@ -10,7 +10,8 @@ import { dirname, resolve } from 'node:path';
 import { PrismaClient } from '@prisma/client';
 import { loadEnv } from '../src/common/load-env';
 
-export const BACKUP_FORMAT = 'lifeos-backup/1';
+/** v2 adds tasks; restore still accepts v1 files. */
+export const BACKUP_FORMAT = 'lifeos-backup/2';
 
 async function main(): Promise<void> {
   loadEnv();
@@ -20,10 +21,11 @@ async function main(): Promise<void> {
 
   const prisma = new PrismaClient();
   try {
-    const [companies, applications, events] = await Promise.all([
+    const [companies, applications, events, tasks] = await Promise.all([
       prisma.company.findMany({ orderBy: { createdAt: 'asc' } }),
       prisma.application.findMany({ orderBy: { createdAt: 'asc' } }),
       prisma.applicationEvent.findMany({ orderBy: { sequence: 'asc' } }),
+      prisma.task.findMany({ orderBy: { createdAt: 'asc' } }),
     ]);
     mkdirSync(dirname(out), { recursive: true });
     writeFileSync(
@@ -35,13 +37,14 @@ async function main(): Promise<void> {
           companies,
           applications,
           events,
+          tasks,
         },
         null,
         2,
       ),
     );
     console.log(
-      `Backed up ${companies.length} companies, ${applications.length} applications and ${events.length} events to\n  ${out}`,
+      `Backed up ${companies.length} companies, ${applications.length} applications, ${events.length} events and ${tasks.length} tasks to\n  ${out}`,
     );
   } finally {
     await prisma.$disconnect();
