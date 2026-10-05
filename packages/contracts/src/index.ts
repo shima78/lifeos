@@ -3,3 +3,4 @@ export * from './schemas';
 export * from './dto';
 export * from './dates';
 export * from './assistant';
+export * from './tasks';

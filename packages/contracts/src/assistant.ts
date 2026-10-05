@@ -30,6 +30,9 @@ export const MUTATING_ASSISTANT_TOOLS = [
   'change_status',
   'add_event',
   'void_event',
+  'add_task',
+  'update_task',
+  'delete_task',
 ] as const;
 
 /** GET /assistant/status */

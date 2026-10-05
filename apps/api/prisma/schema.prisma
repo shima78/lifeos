@@ -67,6 +67,7 @@ model Application {
   createdAt      DateTime           @default(now()) @db.Timestamptz(3)
   updatedAt      DateTime           @updatedAt @db.Timestamptz(3)
   events         ApplicationEvent[]
+  tasks          Task[]
 
   @@index([companyId])
   @@index([status])
@@ -94,4 +95,36 @@ model ApplicationEvent {
   @@index([applicationId, occurredAt])
   @@index([type, scheduledFor])
   @@index([occurredAt])
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+/// A to-do. Optionally linked to a job application (e.g. "Follow up with the recruiter").
+model Task {
+  id            String       @id @default(cuid())
+  title         String
+  notes         String?
+  status        TaskStatus   @default(TODO)
+  priority      TaskPriority @default(MEDIUM)
+  /// A Berlin calendar day, stored as Berlin midnight (like appliedAt).
+  dueDate       DateTime?    @db.Timestamptz(3)
+  /// Set when the task moves to DONE, cleared when it is reopened.
+  completedAt   DateTime?    @db.Timestamptz(3)
+  applicationId String?
+  application   Application? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+  createdAt     DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime     @updatedAt @db.Timestamptz(3)
+
+  @@index([status, dueDate])
+  @@index([applicationId])
 }
