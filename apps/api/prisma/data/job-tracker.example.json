@@ -1,0 +1,62 @@
+{
+  "source": "Example rows in the format of prisma/data/job-tracker.json (fictional companies)",
+  "sourceLastSaved": "2026-09-24",
+  "rows": [
+    {
+      "dateApplied": "2026-09-07",
+      "company": "Acme GmbH",
+      "role": "Frontend Engineer",
+      "track": "Software",
+      "location": "Berlin",
+      "jobUrl": "https://jobs.acme.example/123?utm_source=linkedin",
+      "status": "Applied",
+      "nextAction": "Follow up after 7 days",
+      "followUpDate": "2026-09-14",
+      "priority": "A - Strong fit",
+      "notes": "SAMPLE — replace this row with a real application.",
+      "sheetRow": 6
+    },
+    {
+      "dateApplied": "2026-09-08",
+      "company": "ACME GmbH",
+      "role": "Backend Engineer",
+      "track": "Software",
+      "location": "Munich",
+      "jobUrl": "jobs@acme.example",
+      "status": "Rejected",
+      "nextAction": null,
+      "followUpDate": null,
+      "priority": "B - Good fit",
+      "notes": null,
+      "sheetRow": 7
+    },
+    {
+      "dateApplied": "2026-09-10",
+      "company": "Globex",
+      "role": null,
+      "track": "AI/ML",
+      "location": "remote",
+      "jobUrl": "https://careers.globex.example/jobs/42",
+      "status": "Interview",
+      "nextAction": "Prepare system design",
+      "followUpDate": null,
+      "priority": null,
+      "notes": null,
+      "sheetRow": 8
+    },
+    {
+      "dateApplied": "2026-09-12",
+      "company": "Initech",
+      "role": "Data Engineer",
+      "track": null,
+      "location": null,
+      "jobUrl": null,
+      "status": "Applied",
+      "nextAction": null,
+      "followUpDate": null,
+      "priority": null,
+      "notes": "Referred by a friend",
+      "sheetRow": 9
+    }
+  ]
+}
