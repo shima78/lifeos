@@ -1,0 +1,14 @@
+{
+  "name": "@lifeos/postgres",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local PostgreSQL for LifeOS without Docker. Data lives in ~/.lifeos/postgres.",
+  "scripts": {
+    "dev": "node server.mjs",
+    "start": "node server.mjs",
+    "stop": "node stop.mjs"
+  },
+  "dependencies": {
+    "embedded-postgres": "18.4.0-beta.17"
+  }
+}

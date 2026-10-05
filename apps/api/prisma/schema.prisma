@@ -1,0 +1,97 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ApplicationStatus {
+  SAVED
+  APPLIED
+  SCREENING
+  INTERVIEW
+  OFFER
+  REJECTED
+  WITHDRAWN
+}
+
+enum EventType {
+  CREATED
+  STATUS_CHANGED
+  APPLICATION_SUBMITTED
+  RECRUITER_CONTACT
+  INTERVIEW_SCHEDULED
+  INTERVIEW_COMPLETED
+  ASSIGNMENT_RECEIVED
+  FOLLOW_UP
+  REJECTION
+  OFFER
+  WITHDRAWN
+  NOTE
+}
+
+model Company {
+  id           String        @id @default(cuid())
+  name         String
+  /// lower(trim(name)); enforces case-insensitive uniqueness.
+  nameKey      String        @unique
+  website      String?
+  location     String?
+  notes        String?
+  createdAt    DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime      @updatedAt @db.Timestamptz(3)
+  applications Application[]
+}
+
+model Application {
+  id             String             @id @default(cuid())
+  companyId      String
+  company        Company            @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  title          String
+  /// Normalized (see common/url.ts). Unique when present; NULLs never collide in Postgres.
+  url            String?            @unique
+  location       String?
+  employmentType String?
+  description    String?
+  status         ApplicationStatus  @default(SAVED)
+  appliedAt      DateTime?          @db.Timestamptz(3)
+  nextAction     String?
+  nextActionDate DateTime?          @db.Timestamptz(3)
+  recruiterName  String?
+  recruiterEmail String?
+  notes          String?
+  /// Denormalized max(occurredAt) of non-voided events; maintained by EventsRepository.
+  lastActivityAt DateTime?          @db.Timestamptz(3)
+  createdAt      DateTime           @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime           @updatedAt @db.Timestamptz(3)
+  events         ApplicationEvent[]
+
+  @@index([companyId])
+  @@index([status])
+  @@index([lastActivityAt])
+}
+
+/// Append-only. Rows are never updated or deleted, except setting voidedAt/voidReason once
+/// (enforced by a database trigger, see the init migration).
+model ApplicationEvent {
+  id            String      @id @default(cuid())
+  /// Insertion order; tiebreaker for events with the same occurredAt.
+  sequence      Int         @unique @default(autoincrement())
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Restrict)
+  type          EventType
+  title         String
+  description   String?
+  occurredAt    DateTime    @db.Timestamptz(3)
+  scheduledFor  DateTime?   @db.Timestamptz(3)
+  metadata      Json?
+  voidedAt      DateTime?   @db.Timestamptz(3)
+  voidReason    String?
+  createdAt     DateTime    @default(now()) @db.Timestamptz(3)
+
+  @@index([applicationId, occurredAt])
+  @@index([type, scheduledFor])
+  @@index([occurredAt])
+}

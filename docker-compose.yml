@@ -1,0 +1,22 @@
+# Optional: Postgres in Docker. Without Docker, `pnpm dev` (or `pnpm db:start`) runs an embedded
+# Postgres instead, with data in ~/.lifeos/postgres. Both use the same port and databases.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: lifeos
+      POSTGRES_PASSWORD: lifeos
+      POSTGRES_DB: lifeos
+    ports:
+      - '5432:5432'
+    volumes:
+      - lifeos-pg:/var/lib/postgresql/data
+      - ./docker/init-test-db.sql:/docker-entrypoint-initdb.d/init-test-db.sql:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U lifeos -d lifeos']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  lifeos-pg:
