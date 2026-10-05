@@ -1,0 +1,28 @@
+{
+  "name": "@lifeos/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsc -p tsconfig.build.json --watch --preserveWatchOutput",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint src",
+    "test": "jest",
+    "postinstall": "tsc -p tsconfig.build.json"
+  },
+  "dependencies": {
+    "zod": "3"
+  },
+  "devDependencies": {
+    "@types/jest": "29",
+    "@types/node": "22",
+    "jest": "29",
+    "ts-jest": "29",
+    "typescript": "5"
+  }
+}
