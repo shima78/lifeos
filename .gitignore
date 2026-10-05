@@ -1,0 +1,14 @@
+node_modules
+dist
+.next
+.turbo
+coverage
+*.tsbuildinfo
+.env
+.env.local
+next-env.d.ts
+.lifeos
+
+# Personal data: your real job tracker export (see apps/api/prisma/data/job-tracker.example.json)
+apps/api/prisma/data/*.json
+!apps/api/prisma/data/*.example.json

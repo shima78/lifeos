@@ -1,0 +1,38 @@
+{
+  "name": "lifeos",
+  "private": true,
+  "packageManager": "pnpm@9.15.9",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "postinstall": "node scripts/ensure-env.mjs",
+    "dev": "turbo run dev --parallel --filter=@lifeos/postgres --filter=api --filter=web",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test --concurrency=1",
+    "test:e2e": "turbo run test:e2e --concurrency=1",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "db:migrate": "pnpm --filter api db:migrate",
+    "db:seed": "pnpm --filter api db:seed",
+    "db:reset": "pnpm --filter api db:reset",
+    "db:start": "pnpm --filter @lifeos/postgres start",
+    "db:stop": "pnpm --filter @lifeos/postgres stop",
+    "db:backup": "pnpm --filter api db:backup",
+    "db:restore": "pnpm --filter api db:restore"
+  },
+  "devDependencies": {
+    "@eslint/js": "9",
+    "@next/eslint-plugin-next": "15",
+    "eslint": "9",
+    "eslint-config-prettier": "10",
+    "eslint-plugin-react-hooks": "5",
+    "globals": "16",
+    "prettier": "3",
+    "turbo": "2",
+    "typescript": "5",
+    "typescript-eslint": "8"
+  }
+}
