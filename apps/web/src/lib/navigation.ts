@@ -1,4 +1,4 @@
-import { Briefcase, Building2, LayoutDashboard, type LucideIcon } from 'lucide-react';
+import { Briefcase, Building2, LayoutDashboard, ListTodo, type LucideIcon } from 'lucide-react';
 
 export interface NavItem {
   href: string;
@@ -14,7 +14,7 @@ export interface NavModule {
 
 /**
  * LifeOS is organised in modules. Each module adds a section here (and its own pages under
- * src/app). Job search is the first one; tasks and activity tracking are planned next.
+ * src/app). Job search and tasks so far.
  */
 export const NAV_MODULES: NavModule[] = [
   {
@@ -27,6 +27,10 @@ export const NAV_MODULES: NavModule[] = [
       { href: '/applications', label: 'Applications', icon: Briefcase },
       { href: '/companies', label: 'Companies', icon: Building2 },
     ],
+  },
+  {
+    label: 'Productivity',
+    items: [{ href: '/tasks', label: 'Tasks', icon: ListTodo }],
   },
 ];
 
