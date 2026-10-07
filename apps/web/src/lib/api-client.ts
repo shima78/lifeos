@@ -16,6 +16,10 @@ import type {
   UpdateApplicationInput,
   UpdateCompanyInput,
   VoidEventInput,
+  CreateTaskInput,
+  TaskDto,
+  TaskListQueryInput,
+  UpdateTaskInput,
 } from '@lifeos/contracts';
 
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
@@ -120,5 +124,14 @@ export const api = {
       request<ApplicationEventDto>('POST', `/applications/${id}/events`, input),
     voidEvent: (id: string, eventId: string, input: VoidEventInput) =>
       request<ApplicationEventDto>('POST', `/applications/${id}/events/${eventId}/void`, input),
+  },
+
+  tasks: {
+    list: (query: TaskListQueryInput = {}) =>
+      request<TaskDto[]>('GET', `/tasks${toSearchParams(query as Record<string, QueryValue>)}`),
+    create: (input: CreateTaskInput) => request<TaskDto>('POST', '/tasks', input),
+    update: (id: string, input: UpdateTaskInput) =>
+      request<TaskDto>('PATCH', `/tasks/${id}`, input),
+    delete: (id: string) => request<null>('DELETE', `/tasks/${id}`),
   },
 };

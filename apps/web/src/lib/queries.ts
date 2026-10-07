@@ -1,6 +1,9 @@
 'use client';
 
 import type {
+  CreateTaskInput,
+  TaskListQueryInput,
+  UpdateTaskInput,
   ApplicationListQueryInput,
   ChangeStatusInput,
   CreateApplicationInput,
@@ -18,6 +21,7 @@ export const queryKeys = {
   applications: (query: ApplicationListQueryInput) => ['applications', query] as const,
   application: (id: string) => ['application', id] as const,
   timeline: (id: string) => ['timeline', id] as const,
+  tasks: (query: TaskListQueryInput) => ['tasks', query] as const,
 };
 
 export const useDashboard = () =>
@@ -91,4 +95,32 @@ export function useVoidEvent(id: string) {
       api.applications.voidEvent(id, eventId, input),
     onSuccess: invalidate,
   });
+}
+
+export const useTasks = (query: TaskListQueryInput = {}) =>
+  useQuery({
+    queryKey: queryKeys.tasks(query),
+    queryFn: () => api.tasks.list(query),
+    placeholderData: keepPreviousData,
+  });
+
+export function useCreateTask() {
+  const invalidate = useInvalidateAll();
+  return useMutation({
+    mutationFn: (input: CreateTaskInput) => api.tasks.create(input),
+    onSuccess: invalidate,
+  });
+}
+
+export function useUpdateTask() {
+  const invalidate = useInvalidateAll();
+  return useMutation({
+    mutationFn: ({ id, ...input }: UpdateTaskInput & { id: string }) => api.tasks.update(id, input),
+    onSuccess: invalidate,
+  });
+}
+
+export function useDeleteTask() {
+  const invalidate = useInvalidateAll();
+  return useMutation({ mutationFn: (id: string) => api.tasks.delete(id), onSuccess: invalidate });
 }
