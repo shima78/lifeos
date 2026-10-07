@@ -8,6 +8,7 @@ import { type ReactNode, useState } from 'react';
 import { AddEventDialog, VoidEventDialog } from '@/components/event-dialogs';
 import { EmptyState, ErrorState, LoadingRows } from '@/components/states';
 import { StatusMenu } from '@/components/status-menu';
+import { ApplicationTasksCard } from '@/components/tasks/task-cards';
 import { Timeline } from '@/components/timeline';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -175,6 +176,8 @@ export default function ApplicationDetailPage() {
               </dl>
             </CardContent>
           </Card>
+
+          <ApplicationTasksCard applicationId={app.id} />
 
           {app.description && (
             <Card>

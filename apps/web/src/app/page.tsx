@@ -9,6 +9,7 @@ import { DailyGoalChart, DailyGoalLegend, goalStreak } from '@/components/charts
 import { Sparkline } from '@/components/charts/weekly-chart';
 import { EventIcon } from '@/components/event-icon';
 import { EmptyState, ErrorState } from '@/components/states';
+import { TodayTasksCard } from '@/components/tasks/task-cards';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -273,8 +274,9 @@ export default function DashboardPage() {
           </Panel>
         </div>
 
-        {/* Upcoming interviews and recent activity */}
-        <div className="grid gap-6 lg:grid-cols-2">
+        {/* Tasks, upcoming interviews and recent activity */}
+        <div className="grid gap-6 lg:grid-cols-3">
+          <TodayTasksCard className="min-w-0" />
           <Panel title="Upcoming interviews">
             {data.upcomingInterviews.length === 0 ? (
               <p className="py-4 text-sm text-muted-foreground">No interviews scheduled.</p>
