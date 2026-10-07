@@ -4,7 +4,10 @@ import {
   companyListQuerySchema,
   createApplicationSchema,
   createEventFieldsSchema,
+  createTaskSchema,
+  taskListQuerySchema,
   updateApplicationSchema,
+  updateTaskSchema,
   voidEventSchema,
 } from '@lifeos/contracts';
 import type { INestApplicationContext } from '@nestjs/common';
@@ -16,6 +19,7 @@ import { DomainError } from '../common/errors';
 import { CompaniesService } from '../companies/companies.service';
 import { DashboardService } from '../dashboard/dashboard.service';
 import { EventsService } from '../events/events.service';
+import { TasksService } from '../tasks/tasks.service';
 
 const DATE_HINT =
   'Dates are "YYYY-MM-DD" (a calendar day in Europe/Berlin) or a full ISO-8601 datetime.';
@@ -78,15 +82,19 @@ export function createMcpServer(app: INestApplicationContext): McpServer {
   const events = app.get(EventsService);
   const companies = app.get(CompaniesService);
   const dashboard = app.get(DashboardService);
+  const tasks = app.get(TasksService);
 
   const server = new McpServer(
     { name: 'lifeos', version: '0.1.0' },
     {
       instructions:
-        "LifeOS is the user's personal job-application tracker. Use add_application when the user " +
+        "LifeOS is the user's personal dashboard: a job-application tracker and a task list. " +
+        'Use add_application when the user ' +
         'applies to, or wants to save, a job (pass the posting URL when known: duplicates are ' +
         'detected automatically). Use change_status when they hear back, and add_event to log ' +
-        'recruiter contact, interviews, follow-ups and notes. ' +
+        'recruiter contact, interviews, follow-ups and notes. For to-dos and reminders use the ' +
+        'task tools (add_task, list_tasks, update_task, delete_task); link a task to an ' +
+        'application with applicationId when it is about one. ' +
         DATE_HINT,
     },
   );
@@ -216,6 +224,69 @@ export function createMcpServer(app: INestApplicationContext): McpServer {
       annotations: { readOnlyHint: true },
     },
     () => dashboard.get(),
+  );
+
+  const taskId = z.string().min(1).describe('Task id');
+
+  tool(
+    server,
+    'add_task',
+    {
+      title: 'Add task',
+      description:
+        'Add a to-do. Optional notes, priority (LOW/MEDIUM/HIGH, default MEDIUM), dueDate and ' +
+        'applicationId to link it to a job application. ' +
+        DATE_HINT,
+      inputSchema: createTaskSchema,
+    },
+    (input) => tasks.create(input),
+  );
+
+  tool(
+    server,
+    'list_tasks',
+    {
+      title: 'List tasks',
+      description:
+        'List tasks, most urgent first. Each has a bucket: overdue, today, upcoming, someday (no ' +
+        'due date) or done. Filter by bucket (e.g. ["overdue", "today"]), status, ' +
+        'applicationId or search text.',
+      inputSchema: taskListQuerySchema,
+      annotations: { readOnlyHint: true },
+    },
+    (query) => tasks.list(query),
+  );
+
+  tool(
+    server,
+    'update_task',
+    {
+      title: 'Update task',
+      description:
+        'Change a task: title, notes, priority, dueDate, applicationId, or status (TODO, ' +
+        'IN_PROGRESS, DONE). Use status DONE to complete a task. Send an empty string to clear ' +
+        'notes, dueDate or applicationId. ' +
+        DATE_HINT,
+      inputSchema: updateTaskSchema.extend({ id: taskId }),
+    },
+    ({ id: tid, ...data }) => tasks.update(tid, data),
+  );
+
+  tool(
+    server,
+    'delete_task',
+    {
+      title: 'Delete task',
+      description:
+        'Permanently delete a task. Prefer update_task with status DONE for finished tasks; ' +
+        'delete only when the user asks to remove one.',
+      inputSchema: z.object({ id: taskId }),
+      annotations: { destructiveHint: true },
+    },
+    async ({ id: tid }) => {
+      await tasks.delete(tid);
+      return { deleted: tid };
+    },
   );
 
   return server;

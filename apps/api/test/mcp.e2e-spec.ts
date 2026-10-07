@@ -42,12 +42,16 @@ describe('LifeOS MCP server (e2e)', () => {
       [
         'add_application',
         'add_event',
+        'add_task',
         'change_status',
+        'delete_task',
         'get_application',
         'get_dashboard',
         'list_applications',
         'list_companies',
+        'list_tasks',
         'update_application',
+        'update_task',
         'void_event',
       ].sort(),
     );
@@ -149,5 +153,50 @@ describe('LifeOS MCP server (e2e)', () => {
     expect((data as ApplicationDto[]).map((a) => a.id)).toEqual([applicationId]);
     const none = await call('list_applications', { status: ['OFFER'] });
     expect(none.data).toEqual([]);
+  });
+});
+
+describe('LifeOS MCP task tools (e2e)', () => {
+  let ctx: TestContext;
+  let client: Client;
+
+  const call = async (name: string, args: Record<string, unknown> = {}) => {
+    const result = (await client.callTool({ name, arguments: args })) as CallToolResult;
+    const first = result.content[0];
+    return JSON.parse(first && first.type === 'text' ? first.text : 'null') as unknown;
+  };
+
+  beforeAll(async () => {
+    ctx = await createTestContext();
+    await resetDatabase(ctx.prisma);
+    ctx.clock.set('2026-10-06T10:00:00.000Z');
+    const server = createMcpServer(ctx.module);
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+    client = new Client({ name: 'test-client', version: '1.0.0' });
+    await Promise.all([server.connect(serverTransport), client.connect(clientTransport)]);
+  });
+  afterAll(async () => {
+    await client.close();
+    await ctx.module.close();
+  });
+
+  it('adds, lists, completes and deletes tasks', async () => {
+    const task = (await call('add_task', {
+      title: 'Follow up with Acme',
+      dueDate: '2026-10-06',
+    })) as {
+      id: string;
+      bucket: string;
+    };
+    expect(task.bucket).toBe('today');
+
+    const today = (await call('list_tasks', { bucket: ['overdue', 'today'] })) as { id: string }[];
+    expect(today.map((t) => t.id)).toEqual([task.id]);
+
+    const done = (await call('update_task', { id: task.id, status: 'DONE' })) as { bucket: string };
+    expect(done.bucket).toBe('done');
+
+    expect(await call('delete_task', { id: task.id })).toEqual({ deleted: task.id });
+    expect(await call('list_tasks')).toEqual([]);
   });
 });
