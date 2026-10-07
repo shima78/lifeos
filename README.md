@@ -1,7 +1,7 @@
 # LifeOS
 
-A personal dashboard that Claude helps keep up to date. Job search is the first module (applications,
-companies, timelines); tasks and activity tracking come next.
+A personal dashboard that Claude helps keep up to date. Modules: job search (applications, companies,
+timelines) and tasks.
 
 Chat with Claude right inside the dashboard ("I just applied to the frontend role at Acme, here's
 the link"). Claude reads and changes your data through LifeOS's tools, and the dashboard updates live.
@@ -92,14 +92,15 @@ This repo's `.mcp.json` already registers it for Claude Code sessions opened in 
 
 The server reads the repo-root `.env`, wherever it is started from.
 
-| Tool                                    | Does                                                              |
-| --------------------------------------- | ----------------------------------------------------------------- |
-| `add_application`                       | Track a job (company matched or created, duplicate URLs detected) |
-| `list_applications` / `get_application` | Search and filter; one application with its timeline              |
-| `update_application`                    | Edit fields (not status)                                          |
-| `change_status`                         | Move status; records the matching timeline events                 |
-| `add_event` / `void_event`              | Log recruiter contact, interviews, notes; void mistakes           |
-| `list_companies` / `get_dashboard`      | Companies; counts, needs attention, upcoming interviews           |
+| Tool                                                      | Does                                                              |
+| --------------------------------------------------------- | ----------------------------------------------------------------- |
+| `add_application`                                         | Track a job (company matched or created, duplicate URLs detected) |
+| `list_applications` / `get_application`                   | Search and filter; one application with its timeline              |
+| `update_application`                                      | Edit fields (not status)                                          |
+| `change_status`                                           | Move status; records the matching timeline events                 |
+| `add_event` / `void_event`                                | Log recruiter contact, interviews, notes; void mistakes           |
+| `list_companies` / `get_dashboard`                        | Companies; counts, needs attention, upcoming interviews           |
+| `add_task` / `list_tasks` / `update_task` / `delete_task` | To-dos: add, list by due date, complete, delete                   |
 
 ## Scripts
 
@@ -139,6 +140,7 @@ docs/               API and MCP reference, architecture, decisions
 - `/applications/new`, `/applications/[id]/edit` Create and edit, with duplicate detection
 - `/applications/[id]` Detail with status menu and timeline (add and void events)
 - `/companies`, `/companies/[id]` Companies and their applications
+- `/tasks` Tasks grouped by Overdue, Today, Upcoming, No date and Completed, with quick add; also shown on the dashboard and on each application
 - Assistant panel on every page (docked on wide screens, slide-over below)
 
 New modules (such as tasks) add a section to `apps/web/src/lib/navigation.ts` and their own pages.

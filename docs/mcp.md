@@ -128,10 +128,14 @@ Results are returned as JSON text (`content[0].text`). Object shapes are documen
 | [`void_event`](#void_event)                 | write (destructive hint) | `POST /applications/:id/events/:eventId/void` |
 | [`list_companies`](#list_companies)         | read-only                | `GET /companies`                              |
 | [`get_dashboard`](#get_dashboard)           | read-only                | `GET /dashboard`                              |
+| [`add_task`](#task-tools)                   | write                    | `POST /tasks`                                 |
+| [`list_tasks`](#task-tools)                 | read-only                | `GET /tasks`                                  |
+| [`update_task`](#task-tools)                | write                    | `PATCH /tasks/:id`                            |
+| [`delete_task`](#task-tools)                | write (destructive hint) | `DELETE /tasks/:id`                           |
 
-Read-only tools carry the MCP `readOnlyHint` annotation; `void_event` carries `destructiveHint`. Clients
-may use these to decide what needs your confirmation. There are **no delete tools**: nothing Claude
-does can delete data.
+Read-only tools carry the MCP `readOnlyHint` annotation; `void_event` and `delete_task` carry
+`destructiveHint`. Clients may use these to decide what needs your confirmation. The only thing Claude
+can delete is a task; applications, companies and timeline events can't be deleted.
 
 ### `add_application`
 
@@ -265,6 +269,20 @@ No arguments. Returns the same object as `GET /dashboard`: `stats` (including `r
 and this week's progress, so Claude can answer "how am I doing on my goal?"), `needsAttention` (no response for 14+ days, next actions due within
 3 days or overdue, interviews in the next 7 days), `upcomingInterviews` and `recentActivity`. See
 [api.md → Dashboard](api.md#dashboard).
+
+### Task tools
+
+| Tool          | Arguments                                                                                                  |
+| ------------- | ---------------------------------------------------------------------------------------------------------- |
+| `add_task`    | `title` (required), `notes`, `priority` (LOW/MEDIUM/HIGH), `dueDate`, `applicationId`, `status`            |
+| `list_tasks`  | All optional: `bucket` (e.g. `["overdue", "today"]`), `status`, `applicationId`, `search`                  |
+| `update_task` | `id` (required) plus any field; `status: "DONE"` completes a task; `""` clears notes/dueDate/applicationId |
+| `delete_task` | `id`. Claude is told to delete only when you ask; finished tasks are marked DONE instead                   |
+
+Each task comes back with a `bucket` (`overdue`, `today`, `upcoming`, `someday`, `done`). Examples:
+"remind me to follow up with Acme on Friday" → `add_task` with a `dueDate` and the Acme `applicationId`;
+"what do I have to do today?" → `list_tasks` with `bucket: ["overdue", "today"]`. See
+[api.md → Tasks](api.md#tasks).
 
 ---
 

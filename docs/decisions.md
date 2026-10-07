@@ -152,3 +152,16 @@ Choices made where the spec was ambiguous, with the simplest sensible option pic
 - Chart: one series; days that met the goal are solid, days below are a lighter step of the same hue;
   the goal is a labelled dashed reference line (distinct from the solid gridlines). Above it: today and
   this week as meters, days on goal, and the current streak (today only counts once met).
+
+## Tasks
+
+- **Tasks are a second module** (`/tasks`, `TasksModule`, `Task` table) with an optional link to an
+  application (`onDelete: SetNull`). Unlike timeline events they are ordinary mutable records and can
+  be deleted; the MCP `delete_task` tool carries a destructive hint and Claude is told to delete only
+  on request.
+- **Buckets are computed, not stored**: `overdue` / `today` / `upcoming` by Berlin calendar day,
+  `someday` without a due date, `done` by status. `completedAt` is set when a task moves to DONE and
+  cleared when it is reopened.
+- **Backups**: format `lifeos-backup/2` adds tasks; restore still accepts v1 files.
+- The migration was generated with `prisma migrate diff` and applied with `migrate deploy` (purely
+  additive), so the existing data was never at risk of a reset.

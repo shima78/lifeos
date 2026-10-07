@@ -21,6 +21,7 @@ LifeOS or build another client. Claude uses the same operations through the MCP 
 - [Applications](#applications)
 - [Timeline events](#timeline-events)
 - [Companies](#companies)
+- [Tasks](#tasks)
 - [Dashboard](#dashboard)
 - [Assistant](#assistant): the chat endpoint (streams Server-Sent Events)
 - [Reference](#reference): enums and object shapes
@@ -304,6 +305,64 @@ The [Company](#company) plus `applications`: its applications, most recent activ
 ### `PATCH /companies/:id`
 
 Same fields as `POST`, all optional; `""`/`null` clears. `409` when renaming to an existing name.
+
+---
+
+## Tasks
+
+To-dos, optionally linked to a job application. Unlike timeline events, tasks can be edited and
+deleted.
+
+```json
+{
+  "id": "cm…",
+  "title": "Follow up with the recruiter",
+  "notes": null,
+  "status": "TODO",
+  "priority": "HIGH",
+  "dueDate": "2026-10-08T22:00:00.000Z",
+  "completedAt": null,
+  "bucket": "upcoming",
+  "application": {
+    "id": "cm…",
+    "title": "Frontend Engineer",
+    "status": "APPLIED",
+    "company": { "id": "cm…", "name": "Acme GmbH" }
+  },
+  "createdAt": "2026-10-06T10:00:00.000Z",
+  "updatedAt": "2026-10-06T10:00:00.000Z"
+}
+```
+
+| Field      | Notes                                                                                              |
+| ---------- | -------------------------------------------------------------------------------------------------- |
+| `status`   | `TODO`, `IN_PROGRESS`, `DONE`                                                                      |
+| `priority` | `LOW`, `MEDIUM` (default), `HIGH`                                                                  |
+| `dueDate`  | Optional; send a calendar date (`"2026-10-09"`)                                                    |
+| `bucket`   | Computed: `overdue`, `today`, `upcoming` (Berlin calendar days), `someday` (no due date) or `done` |
+
+### `GET /tasks`
+
+| Query           | Notes                                          |
+| --------------- | ---------------------------------------------- |
+| `bucket`        | Repeatable, e.g. `bucket=overdue&bucket=today` |
+| `status`        | Repeatable                                     |
+| `applicationId` | Tasks linked to one application                |
+| `search`        | Title or notes, partial, case-insensitive      |
+
+Sorted most urgent first: overdue → today → upcoming → no date → done; within a day by priority (high
+first). Done tasks are listed most recently completed first.
+
+### `POST /tasks`
+
+`title` (required), `notes`, `status`, `priority`, `dueDate`, `applicationId`. Returns `201`. `404` if
+`applicationId` doesn't exist.
+
+### `GET /tasks/:id`, `PATCH /tasks/:id`, `DELETE /tasks/:id`
+
+`PATCH` takes the same fields, all optional; `""`/`null` clears `notes`, `dueDate` and
+`applicationId`. Moving to `DONE` sets `completedAt`; moving away from `DONE` clears it. `DELETE`
+returns `204`.
 
 ---
 
