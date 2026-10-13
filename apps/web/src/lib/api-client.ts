@@ -89,6 +89,14 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   return data as T;
 }
 
+/** Download links for Excel exports; they take the same filters as the matching lists. */
+export const exportUrl = {
+  applications: (query: ApplicationListQueryInput = {}) =>
+    `${BASE_URL}/export/applications.xlsx${toSearchParams(query as Record<string, QueryValue>)}`,
+  tasks: (query: TaskListQueryInput = {}) =>
+    `${BASE_URL}/export/tasks.xlsx${toSearchParams(query as Record<string, QueryValue>)}`,
+};
+
 /** Typed client for the LifeOS REST API. Input types come from the shared contracts. */
 export const api = {
   dashboard: () => request<DashboardDto>('GET', '/dashboard'),

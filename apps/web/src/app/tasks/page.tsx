@@ -2,6 +2,7 @@
 
 import { Plus, Search } from 'lucide-react';
 import { useState } from 'react';
+import { ExportButton } from '@/components/export-button';
 import { EmptyState, ErrorState, LoadingRows, PageHeader } from '@/components/states';
 import { GroupedTaskList } from '@/components/tasks/task-list';
 import { QuickAddTask } from '@/components/tasks/quick-add';
@@ -9,6 +10,7 @@ import { TaskDialog } from '@/components/tasks/task-dialog';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { exportUrl } from '@/lib/api-client';
 import { useTasks } from '@/lib/queries';
 import { useDebounced } from '@/lib/use-debounced';
 
@@ -27,9 +29,12 @@ export default function TasksPage() {
         title="Tasks"
         description={data ? `${open} open · ${dueNow} due today or overdue` : ' '}
         actions={
-          <Button variant="outline" onClick={() => setCreating(true)}>
-            <Plus /> New task
-          </Button>
+          <>
+            <ExportButton href={exportUrl.tasks(debounced ? { search: debounced } : {})} />
+            <Button onClick={() => setCreating(true)}>
+              <Plus /> New task
+            </Button>
+          </>
         }
       />
 

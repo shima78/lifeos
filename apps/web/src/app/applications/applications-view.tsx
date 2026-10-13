@@ -22,6 +22,7 @@ import {
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { type ComponentProps, useEffect, useMemo, useState } from 'react';
+import { ExportButton } from '@/components/export-button';
 import { EmptyState, ErrorState, LoadingRows, PageHeader } from '@/components/states';
 import { StatusBadge } from '@/components/status-badge';
 import { TruncatedText } from '@/components/truncated-text';
@@ -35,6 +36,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input, NativeSelect } from '@/components/ui/input';
+import { exportUrl } from '@/lib/api-client';
 import { formatDate, formatDateOrDash, isOverdue, relativeDays } from '@/lib/format';
 import { useApplications, useCompanies } from '@/lib/queries';
 import { useDebounced } from '@/lib/use-debounced';
@@ -171,6 +173,12 @@ export function ApplicationsView() {
           data
             ? `${data.length} ${data.length === 1 ? 'application' : 'applications'}${hasFilters ? ' matching filters' : ''}`
             : ' '
+        }
+        actions={
+          <ExportButton
+            href={exportUrl.applications(apiQuery)}
+            label={hasFilters ? 'Export filtered to Excel' : 'Export to Excel'}
+          />
         }
       />
 
