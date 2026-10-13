@@ -1,0 +1,116 @@
+import {
+  type ApplicationDto,
+  type ApplicationEventDto,
+  type ApplicationListQuery,
+  EVENT_TYPE_LABELS,
+  STATUS_LABELS,
+  TASK_PRIORITY_LABELS,
+  TASK_STATUS_LABELS,
+  type TaskDto,
+  type TaskListQuery,
+  toBerlinDateString,
+} from '@lifeos/contracts';
+import { Injectable } from '@nestjs/common';
+import { ApplicationsService } from '../applications/applications.service';
+import { Clock } from '../common/clock';
+import { EventsService } from '../events/events.service';
+import { TasksService } from '../tasks/tasks.service';
+import { type Column, addSheet, newWorkbook, toBuffer } from './workbook';
+
+export interface ExportFile {
+  filename: string;
+  contentType: string;
+  data: Buffer;
+}
+
+const XLSX = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+const APPLICATION_COLUMNS: Column<ApplicationDto>[] = [
+  { header: 'Company', width: 22, value: (a) => a.company.name },
+  { header: 'Position', width: 36, value: (a) => a.title },
+  { header: 'Status', width: 12, value: (a) => STATUS_LABELS[a.status] },
+  { header: 'Location', width: 16, value: (a) => a.location },
+  { header: 'Employment type', width: 16, value: (a) => a.employmentType },
+  { header: 'Applied', width: 13, kind: 'date', value: (a) => a.appliedAt },
+  { header: 'Last activity', width: 13, kind: 'date', value: (a) => a.lastActivityAt },
+  { header: 'Next action', width: 28, value: (a) => a.nextAction },
+  { header: 'Next action date', width: 16, kind: 'date', value: (a) => a.nextActionDate },
+  { header: 'Recruiter', width: 18, value: (a) => a.recruiterName },
+  { header: 'Recruiter email', width: 26, value: (a) => a.recruiterEmail },
+  { header: 'Posting URL', width: 40, kind: 'url', value: (a) => a.url },
+  { header: 'Notes', width: 40, kind: 'longtext', value: (a) => a.notes },
+  { header: 'Job description', width: 50, kind: 'longtext', value: (a) => a.description },
+  { header: 'Added', width: 13, kind: 'date', value: (a) => a.createdAt },
+];
+
+type TimelineRow = ApplicationEventDto & { application: ApplicationDto };
+
+const TIMELINE_COLUMNS: Column<TimelineRow>[] = [
+  { header: 'Company', width: 22, value: (e) => e.application.company.name },
+  { header: 'Position', width: 32, value: (e) => e.application.title },
+  { header: 'Date', width: 17, kind: 'datetime', value: (e) => e.occurredAt },
+  { header: 'Type', width: 22, value: (e) => EVENT_TYPE_LABELS[e.type] },
+  { header: 'Title', width: 34, value: (e) => e.title },
+  { header: 'Description', width: 50, kind: 'longtext', value: (e) => e.description },
+  { header: 'Scheduled for', width: 17, kind: 'datetime', value: (e) => e.scheduledFor },
+  { header: 'Voided', width: 8, value: (e) => (e.voidedAt ? 'Yes' : '') },
+  { header: 'Void reason', width: 30, value: (e) => e.voidReason },
+];
+
+const TASK_COLUMNS: Column<TaskDto>[] = [
+  { header: 'Task', width: 40, value: (t) => t.title },
+  { header: 'Status', width: 12, value: (t) => TASK_STATUS_LABELS[t.status] },
+  { header: 'Priority', width: 10, value: (t) => TASK_PRIORITY_LABELS[t.priority] },
+  { header: 'Due', width: 13, kind: 'date', value: (t) => t.dueDate },
+  { header: 'Completed', width: 17, kind: 'datetime', value: (t) => t.completedAt },
+  {
+    header: 'Application',
+    width: 40,
+    value: (t) => (t.application ? `${t.application.company.name} · ${t.application.title}` : ''),
+  },
+  { header: 'Notes', width: 50, kind: 'longtext', value: (t) => t.notes },
+  { header: 'Added', width: 13, kind: 'date', value: (t) => t.createdAt },
+];
+
+/**
+ * Builds Excel (.xlsx) exports. Transport-independent: returns the file as a Buffer with a
+ * suggested name; the controller decides how to send it.
+ */
+@Injectable()
+export class ExportService {
+  constructor(
+    private readonly applications: ApplicationsService,
+    private readonly events: EventsService,
+    private readonly tasks: TasksService,
+    private readonly clock: Clock,
+  ) {}
+
+  /** The applications matching `query` (same filters and order as the list), plus their timeline. */
+  async applicationsFile(query: Partial<ApplicationListQuery> = {}): Promise<ExportFile> {
+    const apps = await this.applications.list(query);
+    const byId = new Map(apps.map((a) => [a.id, a]));
+    const events = await this.events.timelines(apps.map((a) => a.id));
+    // Group the timeline by application in list order, oldest event first within each.
+    const order = new Map(apps.map((a, i) => [a.id, i]));
+    const timeline: TimelineRow[] = events
+      .map((e) => ({ ...e, application: byId.get(e.applicationId)! }))
+      .sort((a, b) => (order.get(a.applicationId) ?? 0) - (order.get(b.applicationId) ?? 0));
+
+    const workbook = newWorkbook();
+    addSheet(workbook, 'Applications', APPLICATION_COLUMNS, apps);
+    addSheet(workbook, 'Timeline', TIMELINE_COLUMNS, timeline);
+    return this.file('applications', await toBuffer(workbook));
+  }
+
+  /** The tasks matching `query`, most urgent first. */
+  async tasksFile(query: Partial<TaskListQuery> = {}): Promise<ExportFile> {
+    const workbook = newWorkbook();
+    addSheet(workbook, 'Tasks', TASK_COLUMNS, await this.tasks.list(query));
+    return this.file('tasks', await toBuffer(workbook));
+  }
+
+  private file(name: string, data: Buffer): ExportFile {
+    const day = toBerlinDateString(this.clock.now());
+    return { filename: `lifeos-${name}-${day}.xlsx`, contentType: XLSX, data };
+  }
+}

@@ -59,6 +59,14 @@ export class EventsRepository {
     return this.prisma.db.applicationEvent.findUnique({ where: { id } });
   }
 
+  /** Events of several applications, oldest first (for exports). Includes voided events. */
+  findByApplications(applicationIds: string[]): Promise<ApplicationEvent[]> {
+    return this.prisma.db.applicationEvent.findMany({
+      where: { applicationId: { in: applicationIds } },
+      orderBy: [{ occurredAt: 'asc' }, { sequence: 'asc' }],
+    });
+  }
+
   /** Newest first. Includes voided events. */
   findByApplication(applicationId: string): Promise<ApplicationEvent[]> {
     return this.prisma.db.applicationEvent.findMany({

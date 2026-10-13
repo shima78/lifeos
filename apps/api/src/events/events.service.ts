@@ -30,6 +30,13 @@ export class EventsService {
     return rows.map(toEventDto);
   }
 
+  /** All events of the given applications, oldest first, voided included (one query). */
+  async timelines(applicationIds: string[]): Promise<ApplicationEventDto[]> {
+    if (applicationIds.length === 0) return [];
+    const rows = await this.events.findByApplications(applicationIds);
+    return rows.map(toEventDto);
+  }
+
   /** Adds a user-entered event. */
   async add(applicationId: string, data: CreateEventData): Promise<ApplicationEventDto> {
     if (data.type === 'INTERVIEW_SCHEDULED' && !data.scheduledFor) {

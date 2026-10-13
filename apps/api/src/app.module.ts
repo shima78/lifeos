@@ -5,6 +5,7 @@ import { CommonModule } from './common/common.module';
 import { CompaniesModule } from './companies/companies.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { EventsModule } from './events/events.module';
+import { ExportModule } from './export/export.module';
 import { HealthController } from './health/health.controller';
 import { PrismaModule } from './prisma/prisma.module';
 import { TasksModule } from './tasks/tasks.module';
@@ -23,6 +24,7 @@ import { TasksModule } from './tasks/tasks.module';
     DashboardModule,
     AssistantModule,
     TasksModule,
+    ExportModule,
   ],
   controllers: [HealthController],
 })
