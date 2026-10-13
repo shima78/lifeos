@@ -28,6 +28,7 @@
     "@nestjs/platform-express": "11",
     "@prisma/client": "6",
     "dotenv": "17",
+    "exceljs": "4",
     "reflect-metadata": "0.2",
     "rxjs": "7",
     "zod": "3"
