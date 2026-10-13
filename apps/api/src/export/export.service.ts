@@ -1,4 +1,5 @@
 import {
+  APPLICATION_STATUSES,
   type ApplicationDto,
   type ApplicationEventDto,
   type ApplicationListQuery,
@@ -6,8 +7,12 @@ import {
   STATUS_LABELS,
   TASK_PRIORITY_LABELS,
   TASK_STATUS_LABELS,
+  type TaskBucket,
   type TaskDto,
   type TaskListQuery,
+  calendarDaysBetween,
+  formatDate,
+  isTerminalStatus,
   toBerlinDateString,
 } from '@lifeos/contracts';
 import { Injectable } from '@nestjs/common';
@@ -15,7 +20,18 @@ import { ApplicationsService } from '../applications/applications.service';
 import { Clock } from '../common/clock';
 import { EventsService } from '../events/events.service';
 import { TasksService } from '../tasks/tasks.service';
-import { type Column, addSheet, newWorkbook, toBuffer } from './workbook';
+import {
+  THEME,
+  argb,
+  eventTone,
+  priorityTone,
+  statusSolid,
+  statusTone,
+  taskStatusTone,
+  tint,
+  shade,
+} from './colors';
+import { type Column, addSheet, addSummarySheet, newWorkbook, toBuffer } from './workbook';
 
 export interface ExportFile {
   filename: string;
@@ -25,16 +41,34 @@ export interface ExportFile {
 
 const XLSX = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
-const APPLICATION_COLUMNS: Column<ApplicationDto>[] = [
-  { header: 'Company', width: 22, value: (a) => a.company.name },
+const overdueFont = { color: { argb: THEME.danger }, bold: true };
+
+const applicationColumns = (now: Date): Column<ApplicationDto>[] => [
+  { header: 'Company', width: 22, value: (a) => a.company.name, font: () => ({ bold: true }) },
   { header: 'Position', width: 36, value: (a) => a.title },
-  { header: 'Status', width: 12, value: (a) => STATUS_LABELS[a.status] },
+  {
+    header: 'Status',
+    width: 13,
+    value: (a) => STATUS_LABELS[a.status],
+    tone: (a) => statusTone(a.status),
+  },
   { header: 'Location', width: 16, value: (a) => a.location },
   { header: 'Employment type', width: 16, value: (a) => a.employmentType },
   { header: 'Applied', width: 13, kind: 'date', value: (a) => a.appliedAt },
   { header: 'Last activity', width: 13, kind: 'date', value: (a) => a.lastActivityAt },
   { header: 'Next action', width: 28, value: (a) => a.nextAction },
-  { header: 'Next action date', width: 16, kind: 'date', value: (a) => a.nextActionDate },
+  {
+    header: 'Next action date',
+    width: 16,
+    kind: 'date',
+    value: (a) => a.nextActionDate,
+    font: (a) =>
+      a.nextActionDate &&
+      !isTerminalStatus(a.status) &&
+      calendarDaysBetween(now, a.nextActionDate) < 0
+        ? overdueFont
+        : undefined,
+  },
   { header: 'Recruiter', width: 18, value: (a) => a.recruiterName },
   { header: 'Recruiter email', width: 26, value: (a) => a.recruiterEmail },
   { header: 'Posting URL', width: 40, kind: 'url', value: (a) => a.url },
@@ -49,7 +83,12 @@ const TIMELINE_COLUMNS: Column<TimelineRow>[] = [
   { header: 'Company', width: 22, value: (e) => e.application.company.name },
   { header: 'Position', width: 32, value: (e) => e.application.title },
   { header: 'Date', width: 17, kind: 'datetime', value: (e) => e.occurredAt },
-  { header: 'Type', width: 22, value: (e) => EVENT_TYPE_LABELS[e.type] },
+  {
+    header: 'Type',
+    width: 22,
+    value: (e) => EVENT_TYPE_LABELS[e.type],
+    tone: (e) => eventTone(e.type),
+  },
   { header: 'Title', width: 34, value: (e) => e.title },
   { header: 'Description', width: 50, kind: 'longtext', value: (e) => e.description },
   { header: 'Scheduled for', width: 17, kind: 'datetime', value: (e) => e.scheduledFor },
@@ -58,10 +97,26 @@ const TIMELINE_COLUMNS: Column<TimelineRow>[] = [
 ];
 
 const TASK_COLUMNS: Column<TaskDto>[] = [
-  { header: 'Task', width: 40, value: (t) => t.title },
-  { header: 'Status', width: 12, value: (t) => TASK_STATUS_LABELS[t.status] },
-  { header: 'Priority', width: 10, value: (t) => TASK_PRIORITY_LABELS[t.priority] },
-  { header: 'Due', width: 13, kind: 'date', value: (t) => t.dueDate },
+  { header: 'Task', width: 40, value: (t) => t.title, font: () => ({ bold: true }) },
+  {
+    header: 'Status',
+    width: 13,
+    value: (t) => TASK_STATUS_LABELS[t.status],
+    tone: (t) => taskStatusTone(t.status),
+  },
+  {
+    header: 'Priority',
+    width: 11,
+    value: (t) => TASK_PRIORITY_LABELS[t.priority],
+    tone: (t) => priorityTone(t.priority),
+  },
+  {
+    header: 'Due',
+    width: 13,
+    kind: 'date',
+    value: (t) => t.dueDate,
+    font: (t) => (t.bucket === 'overdue' ? overdueFont : undefined),
+  },
   { header: 'Completed', width: 17, kind: 'datetime', value: (t) => t.completedAt },
   {
     header: 'Application',
@@ -70,6 +125,14 @@ const TASK_COLUMNS: Column<TaskDto>[] = [
   },
   { header: 'Notes', width: 50, kind: 'longtext', value: (t) => t.notes },
   { header: 'Added', width: 13, kind: 'date', value: (t) => t.createdAt },
+];
+
+const TASK_SUMMARY: { bucket: TaskBucket; label: string; hex: string }[] = [
+  { bucket: 'overdue', label: 'Overdue', hex: 'e34948' },
+  { bucket: 'today', label: 'Today', hex: 'eb6834' },
+  { bucket: 'upcoming', label: 'Upcoming', hex: '2a78d6' },
+  { bucket: 'someday', label: 'No date', hex: '898781' },
+  { bucket: 'done', label: 'Completed', hex: '008300' },
 ];
 
 /**
@@ -96,16 +159,50 @@ export class ExportService {
       .map((e) => ({ ...e, application: byId.get(e.applicationId)! }))
       .sort((a, b) => (order.get(a.applicationId) ?? 0) - (order.get(b.applicationId) ?? 0));
 
+    const now = this.clock.now();
     const workbook = newWorkbook();
-    addSheet(workbook, 'Applications', APPLICATION_COLUMNS, apps);
-    addSheet(workbook, 'Timeline', TIMELINE_COLUMNS, timeline);
+    addSummarySheet(
+      workbook,
+      'Job applications',
+      `Exported from LifeOS on ${formatDate(now)} · ${apps.length} applications`,
+      ['Status', 'Applications'],
+      APPLICATION_STATUSES.map((s) => ({
+        label: STATUS_LABELS[s],
+        count: apps.filter((a) => a.status === s).length,
+        color: statusSolid(s),
+        tone: statusTone(s),
+      })),
+    );
+    addSheet(workbook, 'Applications', applicationColumns(now), apps, {
+      tabColor: argb('2a78d6'),
+    });
+    addSheet(workbook, 'Timeline', TIMELINE_COLUMNS, timeline, {
+      muted: (e) => e.voidedAt !== null,
+      tabColor: argb('4a3aa7'),
+    });
     return this.file('applications', await toBuffer(workbook));
   }
 
   /** The tasks matching `query`, most urgent first. */
   async tasksFile(query: Partial<TaskListQuery> = {}): Promise<ExportFile> {
+    const tasks = await this.tasks.list(query);
     const workbook = newWorkbook();
-    addSheet(workbook, 'Tasks', TASK_COLUMNS, await this.tasks.list(query));
+    addSummarySheet(
+      workbook,
+      'Tasks',
+      `Exported from LifeOS on ${formatDate(this.clock.now())} · ${tasks.length} tasks`,
+      ['When', 'Tasks'],
+      TASK_SUMMARY.map(({ bucket, label, hex }) => ({
+        label,
+        count: tasks.filter((t) => t.bucket === bucket).length,
+        color: argb(hex),
+        tone: { fill: tint(hex), font: shade(hex) },
+      })),
+    );
+    addSheet(workbook, 'Tasks', TASK_COLUMNS, tasks, {
+      muted: (t) => t.status === 'DONE',
+      tabColor: argb('008300'),
+    });
     return this.file('tasks', await toBuffer(workbook));
   }
 

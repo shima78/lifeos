@@ -9,6 +9,7 @@ import { ApplicationsService } from '../applications/applications.service';
 import { TasksService } from '../tasks/tasks.service';
 import { type TestContext, createTestContext, resetDatabase } from '../test-utils/test-app';
 import { ExportService } from './export.service';
+import { THEME, statusTone } from './colors';
 import { berlinCellDate } from './workbook';
 
 async function read(data: Buffer): Promise<ExcelJS.Workbook> {
@@ -61,13 +62,13 @@ describe('ExportService', () => {
   });
   afterAll(() => ctx.module.close());
 
-  it('exports applications and their timeline as two formatted sheets', async () => {
+  it('exports applications and their timeline as formatted, color-coded sheets', async () => {
     const file = await service.applicationsFile();
     expect(file.filename).toBe('lifeos-applications-2026-10-13.xlsx');
     expect(file.contentType).toContain('spreadsheetml');
 
     const workbook = await read(file.data);
-    expect(workbook.worksheets.map((s) => s.name)).toEqual(['Applications', 'Timeline']);
+    expect(workbook.worksheets.map((s) => s.name)).toEqual(['Summary', 'Applications', 'Timeline']);
 
     const apps = workbook.getWorksheet('Applications')!;
     expect(headers(apps).slice(0, 6)).toEqual([
@@ -79,11 +80,18 @@ describe('ExportService', () => {
       'Applied',
     ]);
     expect(apps.rowCount).toBe(3); // header + 2 applications
-    expect(apps.getRow(1).font?.bold).toBe(true);
+    expect(apps.getRow(1).getCell(1).font?.bold).toBe(true);
     expect(apps.views[0]).toMatchObject({ state: 'frozen', ySplit: 1 });
 
     const acme = apps.getRow(2).getCell(1).value === 'Acme GmbH' ? apps.getRow(2) : apps.getRow(3);
     expect(acme.getCell(3).value).toBe('Interview');
+    // Status cells are color-coded like the app: violet tint with darker violet text.
+    expect(acme.getCell(3).fill).toMatchObject({ fgColor: { argb: statusTone('INTERVIEW').fill } });
+    expect(acme.getCell(3).font).toMatchObject({
+      bold: true,
+      color: { argb: statusTone('INTERVIEW').font },
+    });
+    expect(apps.getRow(1).getCell(1).fill).toMatchObject({ fgColor: { argb: THEME.header } });
     // Applied on 1 Oct (a Berlin calendar day) is a real Excel date, shown as that day.
     expect(acme.getCell(6).value).toEqual(new Date(Date.UTC(2026, 9, 1)));
     expect(acme.getCell(6).numFmt).toBe('dd mmm yyyy');
@@ -94,6 +102,16 @@ describe('ExportService', () => {
     expect(types).toEqual(
       expect.arrayContaining(['Created', 'Application submitted', 'Status changed']),
     );
+  });
+
+  it('starts with a summary of counts per status', async () => {
+    const sheet = (await read((await service.applicationsFile()).data)).getWorksheet('Summary')!;
+    expect(sheet.getCell('B1').value).toBe('Job applications');
+    const rows: Record<string, unknown> = {};
+    sheet.eachRow((row, i) => {
+      if (i > 4) rows[String(row.getCell(2).value)] = row.getCell(3).value;
+    });
+    expect(rows).toMatchObject({ Saved: 1, Interview: 1, Applied: 0, Total: 2 });
   });
 
   it('applies the same filters as the list', async () => {
@@ -108,7 +126,9 @@ describe('ExportService', () => {
   it('exports tasks', async () => {
     const file = await service.tasksFile();
     expect(file.filename).toBe('lifeos-tasks-2026-10-13.xlsx');
-    const sheet = (await read(file.data)).getWorksheet('Tasks')!;
+    const workbook = await read(file.data);
+    expect(workbook.worksheets.map((s) => s.name)).toEqual(['Summary', 'Tasks']);
+    const sheet = workbook.getWorksheet('Tasks')!;
     expect(headers(sheet)[0]).toBe('Task');
     const row = sheet.getRow(2);
     expect(row.getCell(1).value).toBe('Prepare interview');
