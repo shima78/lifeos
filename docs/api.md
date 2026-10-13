@@ -22,6 +22,7 @@ LifeOS or build another client. Claude uses the same operations through the MCP 
 - [Timeline events](#timeline-events)
 - [Companies](#companies)
 - [Tasks](#tasks)
+- [Excel export](#excel-export)
 - [Dashboard](#dashboard)
 - [Assistant](#assistant): the chat endpoint (streams Server-Sent Events)
 - [Reference](#reference): enums and object shapes
@@ -363,6 +364,31 @@ first). Done tasks are listed most recently completed first.
 `PATCH` takes the same fields, all optional; `""`/`null` clears `notes`, `dueDate` and
 `applicationId`. Moving to `DONE` sets `completedAt`; moving away from `DONE` clears it. `DELETE`
 returns `204`.
+
+---
+
+## Excel export
+
+Downloads as `.xlsx` attachments (`Content-Disposition: attachment; filename="lifeos-<name>-YYYY-MM-DD.xlsx"`).
+Both accept the same query parameters as the matching list endpoint, so an export contains exactly
+what the filtered list shows. Invalid parameters return the usual `400 VALIDATION_ERROR`.
+
+### `GET /export/applications.xlsx`
+
+Query: as `GET /applications`. Sheets:
+
+- **Summary**: count and share per status, color-coded.
+- **Applications**: one row per application. Status is color-coded; an overdue next action date is red.
+- **Timeline**: every event of those applications, grouped by application. Voided events are struck through.
+
+### `GET /export/tasks.xlsx`
+
+Query: as `GET /tasks`. Sheets:
+
+- **Summary**: count and share per bucket (overdue, today, upcoming, no date, completed).
+- **Tasks**: status and priority are color-coded, overdue due dates are red, done tasks are struck through.
+
+Dates are real Excel dates in Berlin time. Headers are frozen and filterable.
 
 ---
 

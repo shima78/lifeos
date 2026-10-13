@@ -165,3 +165,10 @@ Choices made where the spec was ambiguous, with the simplest sensible option pic
 - **Backups**: format `lifeos-backup/2` adds tasks; restore still accepts v1 files.
 - The migration was generated with `prisma migrate diff` and applied with `migrate deploy` (purely
   additive), so the existing data was never at risk of a reset.
+
+## Excel export
+
+- **Server-side with exceljs** (`GET /export/*.xlsx`): the web buttons are plain download links, so
+  no spreadsheet code ships to the browser and the export reuses the services' filters and ordering.
+- **Colors match the app** (`apps/api/src/export/colors.ts`): a soft tint as fill and a darker shade
+  as text, so cells stay readable in print. Long text is not wrapped so rows keep an even height.

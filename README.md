@@ -141,6 +141,7 @@ docs/               API and MCP reference, architecture, decisions
 - `/applications/[id]` Detail with status menu and timeline (add and void events)
 - `/companies`, `/companies/[id]` Companies and their applications
 - `/tasks` Tasks grouped by Overdue, Today, Upcoming, No date and Completed, with quick add; also shown on the dashboard and on each application
+- **Export to Excel** on `/applications` (respects the active filters) and `/tasks`: color-coded `.xlsx` with a summary sheet
 - Assistant panel on every page (docked on wide screens, slide-over below)
 
 New modules (such as tasks) add a section to `apps/web/src/lib/navigation.ts` and their own pages.
